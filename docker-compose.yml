@@ -1,0 +1,64 @@
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tech04
+    tty: true
+    ports:
+      - "8080:8080"
+    environment:
+      "COMPOSE_BAKE": "true"
+      "RETRAIN": "false"
+    volumes:
+      - ".:/app"
+    networks:
+      default:
+        ipv4_address: 172.30.0.4
+
+  tensorflow:
+    container_name: tensorflow04
+    image: tensorflow/tensorflow
+    restart: always
+    tty: true
+    command: tensorboard --logdir /app/logs --host 0.0.0.0
+    ports:
+      - 6006:6006
+    volumes:
+      - ".:/app"
+    networks:
+      default:
+        ipv4_address: 172.30.0.5
+
+  portainer:
+    container_name: portainer04
+    image: portainer/portainer-ce:lts
+    restart: always
+    command: 
+      - '--admin-password-file=/run/secrets/portainer_admin_password'
+    ports:
+      - 9000:9000
+      - 9443:9443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data portainer/portainer-ce:lts
+    networks:
+      default:
+        ipv4_address: 172.30.0.6
+    secrets:
+      - portainer_admin_password
+
+volumes:
+  pgdata:
+  portainer_data:
+
+secrets:
+  portainer_admin_password:
+    file: ./portainer/secrets/portainer-admin-password

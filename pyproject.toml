@@ -1,0 +1,33 @@
+[project]
+name = "fiap-tech-challenge-05"
+version = "1.0.0"
+description = ""
+authors = [
+    {name = "natokratos",email = "darktimeangel@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12.10"
+dependencies = [
+    "uvicorn (>=0.34.0,<0.35.0)",
+    "fastapi (>=0.115.12,<0.116.0)",
+    "endpoints (>=7.3.1,<8.0.0)",
+    "setuptools (>=78.1.0,<79.0.0)",
+    "standard-imghdr (>=3.13.0,<4.0.0)",
+    "pandas (>=2.2.3)",
+    "tensorflow (>=2.19.0)",
+    "tensorboard (>=2.19.0)",
+    "scikit-learn (>=1.6)",
+    "matplotlib (>=3.10.1)",
+    "schedule (>=1.2.0)",
+    "yfinance (>=0.2.61)"
+]
+
+[tool.poetry]
+packages = [
+    { include = "src/main.py" },
+    { include = "src/api.py" }
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
