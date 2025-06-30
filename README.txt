@@ -41,3 +41,10 @@ applicants
 id candidato > telefone_recado, telefone, objetivo_profissional, data_criacao, inserido_por, email, local, sabendo_de_nos_por, data_atualizacao, codigo_profissional, nome > informacoes_pessoais, data_aceite, nome, cpf, fonte_indicacao, email, email_secundario, data_nascimento, telefone_celular, telefone_recado, sexo, estado_civil, pcd, endereco, skype, url_linkedin, facebook > informacoes_profissionais, titulo_profissional, area_atuacao, conhecimentos_tecnicos, certificacoes, outras_certificacoes, remuneracao, nivel_profissional > formacao_e_idiomas, nivel_academico, nivel_ingles, nivel_espanhol, outro_idioma > cargo_atual > cv_pt (separada por \n) > cv_en
 
 
+FIAP
+Agentes de Inteligência Artificial para Recrutamento: como usar os dados históricos da empresa e preparar um agente para fazer o papel de um(a) entrevistador(a)?
+
+Otimização de Entrevistas com Inteligência Artificial: construção de uma aplicação utilizando modelos de Machine Learning para compreender o perfil de candidatos(as) que deram certo no passado, a fim de aprender os padrões e replicar o conhecimento do “match” do perfil com novos candidatos e candidatas.
+Datathon Machine Learning Engineering
+
+Identificação de atributos em candidatos(as) de sucesso: utilizando algoritmos clássicos de cluster para identificar padrões nos dados para criar o perfil ideal de candidato(a).
