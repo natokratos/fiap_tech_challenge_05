@@ -30,6 +30,10 @@ class Pipeline:
                 print(df.columns)
                 df1 = pd.json_normalize(df["prospects"].explode(), sep=',')
                 print(df1)
+                df2 = pd.concat([df, df1], axis=1)
+                df2 = df2.drop("prospects", axis=1).dropna()
+                print(df2.columns)
+                print(df2.head())
 
 #                 column_flat = pd.DataFrame([[i, c_flattened] for i, y in df["prospects"].apply(list).iteritems() for c_flattened in y], columns=['I', "prospects"])
 #                 column_flat = column_flat.set_index('I')
