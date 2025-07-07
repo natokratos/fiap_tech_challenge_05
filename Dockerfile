@@ -21,7 +21,6 @@ RUN apt-get update && \
 RUN apt-get -y --fix-broken install gnome-browser-connector \
         firefox-esr \
         software-properties-common \
-        cron \
         netcat-openbsd \
         telnet
 
@@ -39,7 +38,6 @@ RUN python3 -m venv $POETRY_VENV \
 # Add `poetry` to PATH
 ENV PATH="${PATH}:${POETRY_VENV}/bin"
 
-COPY cron-init /etc/cron.d/cron-init
 COPY entrypoint.sh /tmp/entrypoint.sh
 ADD . /app
 
@@ -49,8 +47,6 @@ WORKDIR /app
 RUN poetry lock && \
         poetry show --tree && \
         poetry install -v && \
-        touch /var/log/cron.log && \
-        crontab /etc/cron.d/cron-init && \
         chmod -Rf 777 /tmp/entrypoint.sh
 
 #CMD [ "/bin/bash" ]

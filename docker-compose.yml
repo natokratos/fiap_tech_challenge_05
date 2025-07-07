@@ -3,14 +3,14 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.30.0.0/16
+        - subnet: 172.31.0.0/16
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: tech04
+    container_name: tech05
     tty: true
     ports:
       - "8080:8080"
@@ -21,10 +21,10 @@ services:
       - ".:/app"
     networks:
       default:
-        ipv4_address: 172.30.0.4
+        ipv4_address: 172.31.0.4
 
   tensorflow:
-    container_name: tensorflow04
+    container_name: tensorflow05
     image: tensorflow/tensorflow
     restart: always
     tty: true
@@ -35,10 +35,10 @@ services:
       - ".:/app"
     networks:
       default:
-        ipv4_address: 172.30.0.5
+        ipv4_address: 172.31.0.5
 
   portainer:
-    container_name: portainer04
+    container_name: portainer05
     image: portainer/portainer-ce:lts
     restart: always
     command: 
@@ -51,7 +51,7 @@ services:
       - portainer_data:/data portainer/portainer-ce:lts
     networks:
       default:
-        ipv4_address: 172.30.0.6
+        ipv4_address: 172.31.0.6
     secrets:
       - portainer_admin_password
 
