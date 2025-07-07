@@ -20,20 +20,51 @@ class Pipeline:
         # Path to your zip file
         zip_files = ['prospects', 'vagas', 'applicants']
 
-        with zipfile.ZipFile("prospects.zip", 'r') as z:
-            with z.open("prospects.json") as f:
-                df = pd.read_json(f, orient="index")
-                print(df)
-                #json_data = json.load(f)
-                #print(f"json_data [{json_data}]")
-                #df1 = df.prospects.str.split(" ", expand=True)
-                print(df.columns)
-                df1 = pd.json_normalize(df["prospects"].explode(), sep=',')
-                print(df1)
-                df2 = pd.concat([df, df1], axis=1)
-                df2 = df2.drop("prospects", axis=1).dropna()
-                print(df2.columns)
-                print(df2.head())
+        df = self.read_json("prospects")
+        df = self.normalize_json(df, "prospects")
+        print(df.columns)
+        print(df.head())
+
+        #df1 = self.read_json("vagas")
+        df1 = None
+        with zipfile.ZipFile("vagas.zip", 'r') as z:
+            with z.open("vagas.json") as f:
+                df1 = pd.read_json(f, orient="index")
+                print("TESTE")
+        print(df1.columns)
+        print(df1.head())
+        print(f"df[column_name] {df1["informacoes_basicas"]}")
+
+        df2 = pd.json_normalize(df1["informacoes_basicas"], sep=',')
+        print(f"df2{df2}")
+        df3 = pd.concat([df1, df2], axis=1)
+        print(f"df3{df3}")
+        df3 = df3.drop("informacoes_basicas", axis=1).dropna()
+        print(f"df3{df3}")
+        print("TESTE1")
+        #df1 = self.normalize_json(df1, "informacoes_basicas")
+        #print(df1.columns)
+        #print(df1.head())
+        #df1 = self.normalize_json(df1, "perfil_vaga")
+        #print(df1.columns)
+        #print(df1.head())
+        #df1 = self.normalize_json(df1, "beneficios")
+        #print(df1.columns)
+        #print(df1.head())
+#         with zipfile.ZipFile("prospects.zip", 'r') as z:
+#             with z.open("prospects.json") as f:
+#                 df = pd.read_json(f, orient="index")
+#                 print(df)
+#                 #json_data = json.load(f)
+#                 #print(f"json_data [{json_data}]")
+#                 #df1 = df.prospects.str.split(" ", expand=True)
+#                 print(df.columns)
+#                 df1 = pd.json_normalize(df["prospects"].explode(), sep=',')
+#                 print(df1)
+#                 df2 = pd.concat([df, df1], axis=1)
+#                 df2 = df2.drop("prospects", axis=1).dropna()
+#                 print(df2.columns)
+#                 print(df2.head())
 
 #                 column_flat = pd.DataFrame([[i, c_flattened] for i, y in df["prospects"].apply(list).iteritems() for c_flattened in y], columns=['I', "prospects"])
 #                 column_flat = column_flat.set_index('I')
@@ -147,3 +178,22 @@ class Pipeline:
         mape = mean_absolute_percentage_error(y_test_inv,y_pred_inv)
 
         return mae,mse, rmse, mape
+
+    def read_json(self, file_name):
+        df = None
+        with zipfile.ZipFile(f"{file_name}.zip", 'r') as z:
+            with z.open(f"{file_name}.json") as f:
+                df = pd.read_json(f, orient="index")
+
+        return df
+
+    def normalize_json(self, df, column_name):
+        print(f"df[column_name] {df[column_name]}")
+        df1 = pd.json_normalize(df[column_name].explode(), sep=',')
+        print(f"df1{df1}")
+        df2 = pd.concat([df, df1], axis=1)
+        print(f"df2{df2}")
+        df2 = df2.drop(column_name, axis=1).dropna()
+        print(f"df2{df2}")
+
+        return df2
