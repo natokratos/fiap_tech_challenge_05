@@ -20,28 +20,66 @@ class Pipeline:
         # Path to your zip file
         zip_files = ['prospects', 'vagas', 'applicants']
 
-        df = self.read_json("prospects")
-        df = self.normalize_json(df, "prospects")
-        print(df.columns)
-        print(df.head())
+        df_prospects = self.read_json("prospects")
+        df_prospects = self.normalize_json(df_prospects, "prospects", True)
+        #df_prospects.fillna("", inplace=True)
+        print(f"df_prospects {df_prospects.columns} {df_prospects.shape}")
+        print(df_prospects.head())
 
-        #df1 = self.read_json("vagas")
-        df1 = None
-        with zipfile.ZipFile("vagas.zip", 'r') as z:
-            with z.open("vagas.json") as f:
-                df1 = pd.read_json(f, orient="index")
-                print("TESTE")
-        print(df1.columns)
-        print(df1.head())
-        print(f"df[column_name] {df1["informacoes_basicas"]}")
+        df_vagas = self.read_json("vagas")
+        df_vagas = self.normalize_json(df_vagas, "informacoes_basicas")
+        df_vagas = self.normalize_json(df_vagas, "perfil_vaga")
+        df_vagas = self.normalize_json(df_vagas, "beneficios")
+        #df_vagas.fillna("", inplace=True)
+        print(f"df_vagas {df_vagas.columns} {df_vagas.shape}")
+        print(df_vagas.head())
 
-        df2 = pd.json_normalize(df1["informacoes_basicas"], sep=',')
-        print(f"df2{df2}")
-        df3 = pd.concat([df1, df2], axis=1)
-        print(f"df3{df3}")
-        df3 = df3.drop("informacoes_basicas", axis=1).dropna()
-        print(f"df3{df3}")
-        print("TESTE1")
+        df_applicants = self.read_json("applicants")
+        df_applicants = self.normalize_json(df_applicants, "infos_basicas")
+        df_applicants = self.normalize_json(df_applicants, "informacoes_pessoais")
+        df_applicants = self.normalize_json(df_applicants, "informacoes_profissionais")
+        df_applicants = self.normalize_json(df_applicants, "formacao_e_idiomas")
+        #df2 = self.normalize_json(df2, "cv_pt", separator='\n')
+        df_applicants.reset_index(inplace=True)
+        df_applicants.rename(columns={'index': 'codigo'}, inplace=True)
+        df_applicants['codigo'] = df_applicants['codigo'].astype(object)
+        #df_applicants.fillna("", inplace=True)
+        print(f"df_applicants {df_applicants.columns} {df_applicants.shape}")
+        print(df_applicants.head())
+
+        # Merge df1 and df2, handling duplicate 'value' column
+        #merged_df = pd.merge(df_vagas, df_prospects, on='id', how='outer', suffixes=('_df_vagas', '_df_prospects'))
+        #merged_df = pd.merge(df_vagas, df_prospects, left_index=True, right_index=True)
+        merged_df = df_prospects.join(df_vagas, how="left", lsuffix='_df_prospects', rsuffix='_df_vagas')
+        #print(f"merged_df {merged_df.columns} {merged_df.shape}")
+        #print(merged_df.head())
+
+        # Merge the result with df3
+        #final_df = merged_df.join(df_applicants, on='codigo', how="left", lsuffix='_df_prospects', rsuffix='_df_applicants')
+        final_df = pd.merge(df_prospects, df_applicants, on='codigo', how='left', suffixes=('_df_prospects', '_df_applicants'))
+        final_df.fillna("", inplace=True)
+
+        print(f"final_prospects {final_df.columns} {final_df.shape}")
+        print(final_df.head())
+#         df1 = None
+#         with zipfile.ZipFile("vagas.zip", 'r') as z:
+#             with z.open("vagas.json") as f:
+#                 df1 = pd.read_json(f, orient="index")
+#                 print("TESTE")
+#         print(df1.columns)
+#         print(df1.head())
+#         print(f"df[column_name] {df1["informacoes_basicas"]}")
+#
+#         df2 = pd.json_normalize(df1["informacoes_basicas"], sep=',')
+#         print(f"df2{df2}")
+#         df3 = pd.concat([df1, df2], axis=1)
+#         print(f"df3{df3}")
+#         df3 = df3.drop("informacoes_basicas", axis=1).dropna()
+#         print(f"df3{df3}")
+#         print("TESTE1")
+
+
+
         #df1 = self.normalize_json(df1, "informacoes_basicas")
         #print(df1.columns)
         #print(df1.head())
@@ -187,13 +225,17 @@ class Pipeline:
 
         return df
 
-    def normalize_json(self, df, column_name):
-        print(f"df[column_name] {df[column_name]}")
-        df1 = pd.json_normalize(df[column_name].explode(), sep=',')
-        print(f"df1{df1}")
+    def normalize_json(self, df, column_name, explode=False, separator=','):
+        #print(f"df[{column_name}] {df[column_name]} explode {explode}")
+        if explode:
+            #print("EXPLODE")
+            df1 = pd.json_normalize(df[column_name].explode(), sep=separator)
+        else:
+            df1 = pd.json_normalize(df[column_name], sep=separator)
+        #print(f"df1{df1}")
         df2 = pd.concat([df, df1], axis=1)
-        print(f"df2{df2}")
-        df2 = df2.drop(column_name, axis=1).dropna()
-        print(f"df2{df2}")
+        #print(f"df2{df2}")
+        df2 = df2.drop(column_name, axis=1)
+        #print(f"df2{df2}")
 
         return df2
