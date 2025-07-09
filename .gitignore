@@ -173,3 +173,4 @@ app_package.zip
 teste
 .idea
 *.json
+.DS_Store
