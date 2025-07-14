@@ -15,32 +15,82 @@ import joblib
 import json
 
 class Pipeline:
+    #df_prospects = None
+    def add_index_field(self, index_dict):
+        index_dict = self.df_prospects["index"] #[index_dict.append({ 'index', df_idx }) for df_idx in self.df_prospects["index"]]
+
+        return index_dict
 
     def __init__(self, retrain):
+        df_prospects = self.read_json("prospects")
+
+        dfv = df_prospects['prospects'].explode()
+
+        df_res = pd.DataFrame()
+        for dfx, v in zip(dfv.index, dfv):
+            if type(v) is not float and dfx < len(df_prospects):
+                #v["index"] = f"{dfx}{v['codigo']}"
+                #v["titulo"] = df_prospects.iloc[dfx]['titulo']
+                #v["modalidade"] = df_prospects.iloc[dfx]['modalidade']
+                #print(f"v {v}")
+                df_res = pd.concat([df_res, pd.DataFrame([{'cod_prospect': f"{dfx}{v['codigo']}", 'prospects': v}])], ignore_index=True)
+
+        df_temp = df_res["prospects"].apply(pd.Series)
+        df_prospects = pd.concat([df_res.drop('prospects', axis=1), df_temp], axis=1)
+
+        print(f"df_prospects [{df_prospects}]")
+
+    def x__init__(self, retrain):
         # Path to your zip file
         zip_files = ['prospects', 'vagas', 'applicants']
 
         df_prospects = self.read_json("prospects")
-        df_prospects = self.normalize_json(df_prospects, "prospects", True)
+        df_prospects.reset_index(inplace=True)
+        pd.set_option('display.max_columns', None)
+        df_prospects = self.normalize_json(df_prospects, "prospects", True)#, teste=["prospects", "codigo"])
+        #df_prospects.rename(columns={'index': 'codigo'}, inplace=True)
+        #df_prospects['index'] = df_prospects['index'].astype(object)
+        ##df_prospects.sort_values(by='index', ascending=True, inplace=True)
         #df_prospects.fillna("", inplace=True)
         print(f"df_prospects {df_prospects.columns} {df_prospects.shape}")
-        print(df_prospects.head())
+        print(df_prospects)
+        ##print("\ndf_prospects ===========")
+        ##print(df_prospects[df_prospects['titulo'] == 'CONSULTOR CONTROL M'])
+        print(df_prospects[df_prospects['index'] == 4530])
 
         df_vagas = self.read_json("vagas")
+        #print("xxxxxxxxxxxxxxx")
+        #print(df_vagas)
+        #pd.set_option('display.max_columns', None)
+        df_vagas.reset_index(inplace=True)
+        ##dfx = pd.json_normalize(df_vagas["informacoes_basicas"])
+        #print(f"------------------df1{df1} {df.columns} {df1.columns}")
+        ##df_vagas = pd.concat([df_vagas, dfx], axis=1)
         df_vagas = self.normalize_json(df_vagas, "informacoes_basicas")
         df_vagas = self.normalize_json(df_vagas, "perfil_vaga")
         df_vagas = self.normalize_json(df_vagas, "beneficios")
         #df_vagas.fillna("", inplace=True)
+        ##df_vagas.reset_index(inplace=True)
+        ##print(f"-------DF2 {df_vagas.columns} {df_vagas.shape} {df_vagas[df_vagas['index'] == 4530]}")
+        df_vagas.rename(columns={'titulo_vaga': 'titulo'}, inplace=True)
+        #df_vagas['index'] = df_vagas['index'].astype(object)
+        #df_vagas.sort_values(by='index', ascending=True, inplace=True)
+        #print(f"-------DF3 {df_vagas.columns} {df_vagas.shape} {df_vagas[df_vagas['index'] == 4530]}")
         print(f"df_vagas {df_vagas.columns} {df_vagas.shape}")
-        print(df_vagas.head())
+        print(df_vagas)
+
+        #print("\ndf_vagas ===========")
+        #print(df_vagas[df_vagas['titulo'] == 'CONSULTOR CONTROL M'])
+        print(df_vagas[df_vagas['index'] == 4530])
+        #print("xxxxxxxxxxxxxxx")
 
         df_applicants = self.read_json("applicants")
+        df_applicants.reset_index(inplace=True)
         df_applicants = self.normalize_json(df_applicants, "infos_basicas")
         df_applicants = self.normalize_json(df_applicants, "informacoes_pessoais")
         df_applicants = self.normalize_json(df_applicants, "informacoes_profissionais")
         df_applicants = self.normalize_json(df_applicants, "formacao_e_idiomas")
         #df2 = self.normalize_json(df2, "cv_pt", separator='\n')
-        df_applicants.reset_index(inplace=True)
         df_applicants.rename(columns={'index': 'codigo'}, inplace=True)
         df_applicants['codigo'] = df_applicants['codigo'].astype(object)
         #df_applicants.fillna("", inplace=True)
@@ -49,18 +99,26 @@ class Pipeline:
 
         # Merge df1 and df2, handling duplicate 'value' column
         #merged_df = pd.merge(df_vagas, df_prospects, on='id', how='outer', suffixes=('_df_vagas', '_df_prospects'))
-        #merged_df = pd.merge(df_vagas, df_prospects, left_index=True, right_index=True)
-        merged_df = df_prospects.join(df_vagas, how="left", lsuffix='_df_prospects', rsuffix='_df_vagas')
+        #merged_df = pd.merge(df_prospects, df_vagas, how="left", left_index=True, right_index=True, suffixes=['_df_prospects', '_df_vagas'])
+        merged_df = pd.merge(df_prospects, df_vagas, on=['index','codigo'],  how="left", suffixes=['_df_prospects', '_df_vagas'])
+        #merged_df = df_prospects.join(df_vagas, how="inner", lsuffix='_df_prospects', rsuffix='_df_vagas')
         #print(f"merged_df {merged_df.columns} {merged_df.shape}")
         #print(merged_df.head())
 
         # Merge the result with df3
         #final_df = merged_df.join(df_applicants, on='codigo', how="left", lsuffix='_df_prospects', rsuffix='_df_applicants')
-        final_df = pd.merge(df_prospects, df_applicants, on='codigo', how='left', suffixes=('_df_prospects', '_df_applicants'))
+        #final_df = pd.merge(df_prospects, df_applicants, on='codigo', how='left', suffixes=('_df_prospects', '_df_applicants'))
+        final_df = merged_df
         final_df.fillna("", inplace=True)
-
-        print(f"final_prospects {final_df.columns} {final_df.shape}")
+        print(f"final_df {final_df.columns} {final_df.shape}")
         print(final_df.head())
+        print(final_df[final_df['index'] == 4530])
+        ##print("\ndf_vagas ===========")
+        ##print(df_vagas.iloc[8194])
+        ##print("\ndf_prospects ===========")
+        ##print(df_prospects.iloc[8194])
+        ##print("\nfinal_df ===========")
+        ##print(final_df.iloc[0])
 #         df1 = None
 #         with zipfile.ZipFile("vagas.zip", 'r') as z:
 #             with z.open("vagas.json") as f:
@@ -217,25 +275,33 @@ class Pipeline:
 
         return mae,mse, rmse, mape
 
-    def read_json(self, file_name):
+    def read_json(self, file_name, orient='index'):
         df = None
         with zipfile.ZipFile(f"{file_name}.zip", 'r') as z:
             with z.open(f"{file_name}.json") as f:
-                df = pd.read_json(f, orient="index")
+                df = pd.read_json(f, orient=orient)
 
         return df
 
-    def normalize_json(self, df, column_name, explode=False, separator=','):
+    def normalize_json(self, df, column_name, explode=False, separator=','):#, teste=[]):
         #print(f"df[{column_name}] {df[column_name]} explode {explode}")
         if explode:
-            #print("EXPLODE")
-            df1 = pd.json_normalize(df[column_name].explode(), sep=separator)
+            #dfx1 = df.reset_index()
+            #print(f"EXPLODE1 {dfx1} {dfx1.columns} {dfx1.shape}")
+            dfx = df[column_name].explode()#.reset_index()
+            print(f"EXPLODE {dfx}")# {dfx.columns}")
+            df1 = pd.json_normalize(dfx)#, record_path='prospects', meta=['titulo', 'modalidade'])
+            dfx_reset = dfx.reset_index()#drop=True)
+            df2 = pd.concat([dfx_reset.drop('prospects', axis=1), df1], axis=1)
+            print(f"------------------df1{df2} {df2.columns} {df2.columns}")
+            #merged_df = pd.merge(df_prospects, df_vagas, on=['index','codigo'],  how="left", suffixes=['_df_prospects', '_df_vagas'])
+
         else:
             df1 = pd.json_normalize(df[column_name], sep=separator)
-        #print(f"df1{df1}")
-        df2 = pd.concat([df, df1], axis=1)
-        #print(f"df2{df2}")
-        df2 = df2.drop(column_name, axis=1)
-        #print(f"df2{df2}")
+            df2 = pd.concat([df, df1], axis=1)
+            print(f"------------------df2{df2}")
+            ##df2 = df2.drop(column_name, axis=1)
+            df2.drop(column_name, axis=1, inplace=True)
+            #print(f"df2{df2}")
 
         return df2
