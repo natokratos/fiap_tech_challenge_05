@@ -23,22 +23,81 @@ class Pipeline:
 
     def __init__(self, retrain):
         df_prospects = self.read_json("prospects")
-
-        dfv = df_prospects['prospects'].explode()
-
+        df_prospects_exploded = df_prospects['prospects'].explode()
         df_res = pd.DataFrame()
-        for dfx, v in zip(dfv.index, dfv):
-            if type(v) is not float and dfx < len(df_prospects):
-                #v["index"] = f"{dfx}{v['codigo']}"
-                #v["titulo"] = df_prospects.iloc[dfx]['titulo']
-                #v["modalidade"] = df_prospects.iloc[dfx]['modalidade']
+        count = 0
+        for dfp, v in zip(df_prospects_exploded.index, df_prospects_exploded):
+            if type(v) is not float and dfp < len(df_prospects):
+                v["index"] = dfp
+                #v["titulo"] = df_prospects.iloc[dfp]['titulo']
+                #v["modalidade"] = df_prospects.iloc[dfp]['modalidade']
                 #print(f"v {v}")
-                df_res = pd.concat([df_res, pd.DataFrame([{'cod_prospect': f"{dfx}{v['codigo']}", 'prospects': v}])], ignore_index=True)
+                df_res = pd.concat([df_res, pd.DataFrame([{'cod_prospect': f"{dfp}{v['codigo']}", 'prospects': v}])], ignore_index=True)
+            if count < 4:
+                count = count + 1
+            else:
+                break
 
         df_temp = df_res["prospects"].apply(pd.Series)
         df_prospects = pd.concat([df_res.drop('prospects', axis=1), df_temp], axis=1)
+        print(f"df_prospects [{df_prospects}] [{df_prospects.columns}] [{df_prospects.shape}]")
 
-        print(f"df_prospects [{df_prospects}]")
+        df_vagas = self.read_json("vagas")
+        df_vagas.reset_index(inplace=True)
+        df_vagas = self.normalize_json(df_vagas, "informacoes_basicas")
+        df_vagas = self.normalize_json(df_vagas, "perfil_vaga")
+        df_vagas = self.normalize_json(df_vagas, "beneficios")
+        df_vagas.rename(columns={'titulo_vaga': 'titulo'}, inplace=True)
+        print(f"df_vagas [{df_vagas}] [{df_vagas.columns}] [{df_vagas.shape}]")
+
+        df_applicants = self.read_json("applicants")
+        df_applicants.reset_index(inplace=True)
+        df_applicants = self.normalize_json(df_applicants, "infos_basicas")
+        df_applicants = self.normalize_json(df_applicants, "informacoes_pessoais")
+        df_applicants = self.normalize_json(df_applicants, "informacoes_profissionais")
+        df_applicants = self.normalize_json(df_applicants, "formacao_e_idiomas")
+        #df_applicants.rename(columns={'index': 'codigo'}, inplace=True)
+        #df_applicants['index'] = df_applicants['index'].astype(object)
+        print(f"df_applicants [{df_applicants}] [{df_applicants.columns}] [{df_applicants.shape}]")
+        pd.set_option('display.max_columns', None)
+        print(df_applicants[df_applicants['index'] == 25632])
+
+        merged_df = pd.merge(df_prospects, df_vagas, on=['index'],  how="left", suffixes=['_df_prospects', '_df_vagas'])
+        merged_df['codigo'] = merged_df['codigo'].astype(int)
+        print(f"merged_df [{merged_df}] [{merged_df.columns}] [{merged_df.shape}]")
+        final_df = pd.merge(merged_df, df_applicants, left_on='codigo', right_on='index',  how="left", suffixes=['_merged_df', '_df_applicants'])
+        final_df.fillna("", inplace=True)
+        print(f"final_df [{final_df}] [{final_df.columns}] [{final_df.shape}]")
+        print(final_df[final_df['index_merged_df'] == 4530])
+
+
+#         df_vagas = self.read_json("vagas")
+#         df_informacoes_basicas_exploded = df_vagas['informacoes_basicas'].explode()
+#         df_perfil_vaga_exploded = df_vagas['perfil_vaga'].explode()
+#         df_beneficios_exploded = df_vagas['beneficios'].explode()
+#         df_res = pd.DataFrame()
+#         count = 0
+#         for dfi, vi, dfp, vp, dfb, vb in zip(df_informacoes_basicas_exploded.index, df_informacoes_basicas_exploded,
+#                                                 df_perfil_vaga_exploded.index, df_perfil_vaga_exploded,
+#                                                 df_beneficios_exploded.index, df_beneficios_exploded):
+#             print(f"dfi {dfi} dfp {dfp} dfb {dfb}")
+#             if type(vi) is not float and dfi < len(df_vagas) and type(vp) is not float and dfp < len(df_vagas) and type(vb) is not float and dfb < len(df_vagas):
+#                 df_res = pd.concat([df_res, pd.DataFrame([{'informacoes_basicas': vi, 'perfil_vaga': vp, 'beneficios': vb}])], ignore_index=True)
+#                 print(f"df_res [{df_res}] [{df_res.columns}] [{df_res.shape}]")
+#             if count < 4:
+#                 count = count + 1
+#             else:
+#                 break
+#         df_temp = df_res["informacoes_basicas"].apply(pd.Series)
+#         df_vagas = pd.concat([df_res.drop('informacoes_basicas', axis=1), df_temp], axis=1)
+#         print(f"df_vagas [{df_vagas}] [{df_vagas.columns}] [{df_vagas.shape}]")
+#         df_temp = df_res["perfil_vaga"].apply(pd.Series)
+#         df_vagas = pd.concat([df_res.drop('perfil_vaga', axis=1), df_temp], axis=1)
+#         print(f"df_vagas [{df_vagas}] [{df_vagas.columns}] [{df_vagas.shape}]")
+#         df_temp = df_res["beneficios"].apply(pd.Series)
+#         df_vagas = pd.concat([df_res.drop('beneficios', axis=1), df_temp], axis=1)
+#
+#         print(f"df_vagas [{df_vagas}] [{df_vagas.columns}] [{df_vagas.shape}]")
 
     def x__init__(self, retrain):
         # Path to your zip file
@@ -299,7 +358,7 @@ class Pipeline:
         else:
             df1 = pd.json_normalize(df[column_name], sep=separator)
             df2 = pd.concat([df, df1], axis=1)
-            print(f"------------------df2{df2}")
+            #print(f"------------------df2{df2}")
             ##df2 = df2.drop(column_name, axis=1)
             df2.drop(column_name, axis=1, inplace=True)
             #print(f"df2{df2}")
