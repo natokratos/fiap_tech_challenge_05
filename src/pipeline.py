@@ -5,14 +5,20 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.feature_extraction.text import CountVectorizer
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Flatten, Input
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import yfinance as yf
 import pandas as pd
 import zipfile
 import joblib
 import json
+import re
+import nltk
+
+from nltk.corpus import stopwords
 
 class Pipeline:
     #df_prospects = None
@@ -63,8 +69,82 @@ class Pipeline:
         #print(f"merged_df [{merged_df}] [{merged_df.columns}] [{merged_df.shape}]")
         final_df = pd.merge(merged_df, df_applicants, left_on='codigo', right_on='index',  how="left", suffixes=['_merged_df', '_df_applicants'])
         final_df.fillna("", inplace=True)
-        print(f"final_df [{final_df}] [{final_df.columns}] [{final_df.shape}]")
+        print(f"final_df [{final_df}]")
+        pd.set_option('display.max_columns', None)
+        print(f"final_df_columns [{final_df.columns.tolist()}] [{final_df.shape}]")
         #print(final_df[final_df['index_merged_df'] == 4530])
+
+        count = 0
+        word_count_vector = []
+        nltk.download('stopwords')
+        portuguese_stop_words = stopwords.words('portuguese')
+        custom_stop_words = ['descrição', 'comentário', 'and', 'all', 'Descrição/Comentário:', 'Description)',
+                                'including', 'provide', 'subida', 'durante', 'set', 'input', 'final', 'experiência',
+                                'comprovada', 'responsabilidades']
+        all_stop_words = ENGLISH_STOP_WORDS.union(portuguese_stop_words).union(custom_stop_words)
+        all_stop_words = all_stop_words.union(custom_stop_words)
+        #print(f"all_stop_words {all_stop_words}")
+        prospects_categorized_words = []
+        words = []
+        cv = CountVectorizer(max_df=0.85, stop_words=list(all_stop_words))
+        for df_pa, df_ctc, df_hcn, df_tc, df_np, df_na, df_aa in zip(final_df["principais_atividades"],
+                                            final_df["competencia_tecnicas_e_comportamentais"],
+                                            final_df["habilidades_comportamentais_necessarias"],
+                                            final_df["tipo_contratacao"],
+                                            final_df["nivel_profissional"],
+                                            final_df["nivel_academico_merged_df"],
+                                            final_df["areas_atuacao"]):
+            #print(f"\n\df_pv {df_pv.split()}\n\n")
+            #print(f"df_pa [{df_pa}] df_ctc [{df_ctc}] df_hcn[{df_hcn}]")
+            try:
+#                 if type(df_pa) is not float:
+#                     word_count_vector = word_count_vector + list(cv.fit_transform(df_pa.split()))
+                if type(df_pa) is not float:
+                    words = words + df_pa.split()
+                if type(df_ctc) is not float:
+                    words = words + df_ctc.split()
+                if type(df_hcn) is not float:
+                    words = words + df_hcn.split()
+                if type(df_tc) is not float:
+                    words.append(df_tc)
+                if type(df_np) is not float:
+                    words.append(df_np)
+                if type(df_na) is not float:
+                    words.append(df_na)
+                if type(df_aa) is not float:
+                    words.append(df_aa)
+            except ValueError as e:
+                True
+                #print(f"\n\n{e}\n\n")
+                #print("skipping")
+            if count > 5:
+                break
+            else:
+                count = count + 1
+        word_count = cv.fit_transform(words)
+        #print(f"word_count {word_count}")
+        #print(list(cv.vocabulary_.keys())[:15])
+        prospects_categorized_words = list(cv.vocabulary_.keys())[:10000]
+        print(f"\n\n{prospects_categorized_words} {len(list(cv.vocabulary_.keys()))}\n\n")
+#        print(f"\n\n{prospects_categorized_words}\n\n")
+
+#         for df_cv_pt, df_cv_en in zip(final_df["cv_pt"],
+#                                         final_df["cv_en"]):
+#             #print(f"\n\df_pv {df_pv.split()}\n\n")
+#             #print(f"df_pa [{df_pa}] df_ctc [{df_ctc}] df_hcn[{df_hcn}]")
+#             try:
+#                 if type(df_cv_pt) is not float:
+#                     words = words + df_cv_pt.split()
+#                 if type(df_cv_en) is not float:
+#                     words = words + df_cv_en.split()
+#             except ValueError as e:
+#                 True
+#                 #print(f"\n\n{e}\n\n")
+#                 #print("skipping")
+#             if count > 5:
+#                 break
+#             else:
+#                 count = count + 1
 
     def x__init__(self, retrain):
         # Path to your zip file
