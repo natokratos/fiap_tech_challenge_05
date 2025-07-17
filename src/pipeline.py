@@ -9,6 +9,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Flatten, Input
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import yfinance as yf
 import pandas as pd
@@ -37,7 +39,7 @@ class Pipeline:
                 v["index"] = dfp
 
                 df_res = pd.concat([df_res, pd.DataFrame([{'cod_prospect': f"{dfp}{v['codigo']}", 'prospects': v}])], ignore_index=True)
-            if count < 4:
+            if count < 1000:
                 count = count + 1
             else:
                 break
@@ -117,7 +119,7 @@ class Pipeline:
                 True
                 #print(f"\n\n{e}\n\n")
                 #print("skipping")
-            if count > 5:
+            if count > 1000:
                 break
             else:
                 count = count + 1
@@ -126,6 +128,50 @@ class Pipeline:
         #print(list(cv.vocabulary_.keys())[:15])
         prospects_categorized_words = list(cv.vocabulary_.keys())[:10000]
         print(f"\n\n{prospects_categorized_words} {len(list(cv.vocabulary_.keys()))}\n\n")
+
+        # 1. Tokenization and Integer Encoding
+        tokenizer = Tokenizer()
+        tokenizer.fit_on_texts(prospects_categorized_words)
+        word_index = tokenizer.word_index
+        vocab_size = len(word_index) + 1 # Add 1 for padding token
+
+        sequences = tokenizer.texts_to_sequences(prospects_categorized_words)
+
+        # Padding Sequences
+        max_length = max(len(x) for x in sequences)
+        padded_sequences = pad_sequences(sequences, maxlen=max_length, padding='post')
+
+        # Input/Output Split (for next word prediction)
+        X = prospects_categorized_words[:, :-1]
+        y = prospects_categorized_words[:, -1]
+
+        # Split the data into training and test sets
+        train_size = int(0.8 * len(X))
+        self.X_train, self.X_test = X[:train_size], X[train_size:]
+        self.y_train, self.y_test = y[:train_size], y[train_size:]
+
+        # Reshape the input data to 3D for LSTM
+        self.X_train1 = np.reshape(self.X_train, (self.X_train.shape[0], self.X_train.shape[1], 1))
+        #self.X_test1 = np.reshape(self.X_test, (self.X_test.shape[0], 1, self.X_test.shape[1]))
+        #self.y_train1 = np.reshape(self.y_train, (self.y_train.shape[0], 1, self.y_train.shape[1]))
+        #self.y_test1 = np.reshape(self.y_test, (self.y_test.shape[0], 1, self.y_test.shape[1]))
+
+        #print(f"X_train.shape {self.X_train.shape}")
+#         self.model = Sequential([
+#             Input((self.X_train1.shape[1], 1)),
+#             LSTM(units=50, return_sequences=True),
+#             #Dropout(0.3),
+#             #LSTM(300, activation='relu', return_sequences=True, input_shape=(self.X_train1.shape[1], self.X_train1.shape[2])),
+#             #Dropout(0.3),
+#             LSTM(units=50),
+#             #Dropout(0.3),
+#             #Flatten(),
+#             #LSTM(100),
+#             #Dense(256),
+#             Dense(units=1),
+#         ])
+
+
 #        print(f"\n\n{prospects_categorized_words}\n\n")
 
 #         for df_cv_pt, df_cv_en in zip(final_df["cv_pt"],
