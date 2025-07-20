@@ -10,6 +10,7 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
+from tensorflow.keras.metrics import Recall, F1Score, Precision
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Flatten, Input
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -40,10 +41,10 @@ class Pipeline:
                 v["index"] = dfp
 
                 df_res = pd.concat([df_res, pd.DataFrame([{'cod_prospect': f"{dfp}{v['codigo']}", 'prospects': v}])], ignore_index=True)
-            if count < 1000:
-                count = count + 1
-            else:
-                break
+#             if count < 1000:
+#                 count = count + 1
+#             else:
+#                 break
 
         df_temp = df_res["prospects"].apply(pd.Series)
         df_prospects = pd.concat([df_res.drop('prospects', axis=1), df_temp], axis=1)
@@ -169,18 +170,22 @@ class Pipeline:
         self.model = Sequential([
             Input((self.X_train1.shape[0], self.X_train1.shape[1])),
             LSTM(units=50, activation='relu', return_sequences=True),
-            #Dropout(0.3),
+            Dropout(0.3),
             #LSTM(300, activation='relu', return_sequences=True, input_shape=(self.X_train1.shape[1], self.X_train1.shape[2])),
             #Dropout(0.3),
-            ##LSTM(units=50, activation='relu'),
-            #Dropout(0.3),
+            LSTM(units=50, activation='relu', return_sequences=True),
+            Dropout(0.3),
+            LSTM(units=50, activation='relu', return_sequences=True),
+            Dropout(0.3),
+            LSTM(units=50, activation='relu', return_sequences=True),
+            Dropout(0.3),
             #Flatten(),
             #LSTM(100),
             #Dense(256),
             Dense(units=1),
         ])
 
-        self.model.compile(optimizer='adam', loss=['mean_squared_error'], metrics=['precision'])
+        self.model.compile(optimizer='adam', loss=['mean_squared_error'], metrics=['accuracy', Precision(), Recall()])
 
         log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
