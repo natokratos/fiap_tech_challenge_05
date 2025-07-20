@@ -6,12 +6,13 @@ from sklearn.metrics import mean_absolute_percentage_error
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Flatten, Input
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.preprocessing.text import Tokenizer
-from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 #import yfinance as yf
 import pandas as pd
 import zipfile
@@ -126,51 +127,78 @@ class Pipeline:
         word_count = cv.fit_transform(words)
         #print(f"word_count {word_count}")
         #print(list(cv.vocabulary_.keys())[:15])
-        prospects_categorized_words = list(cv.vocabulary_.keys())[:10000]
-        print(f"\n\n{prospects_categorized_words} {len(list(cv.vocabulary_.keys()))}\n\n")
+        #prospects_categorized_words = list(cv.vocabulary_.keys())[:10000]
+        prospects_categorized_words = list(cv.vocabulary_.items())[:10000]
+        #print(f"cv.vocabulary_ {cv.vocabulary_}")
+        print(f"\n\nprospects_categorized_words {prospects_categorized_words} {len(list(cv.vocabulary_.keys()))}\n\n")
 
-        # 1. Tokenization and Integer Encoding
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(prospects_categorized_words)
-        word_index = tokenizer.word_index
-        vocab_size = len(word_index) + 1 # Add 1 for padding token
+        #print(f"type [{type(prospects_categorized_words)}]")
+        df_train = pd.DataFrame.from_dict(prospects_categorized_words)#, columns=['words', 'count'])
 
-        sequences = tokenizer.texts_to_sequences(prospects_categorized_words)
+        print(f"df_train {df_train} {df_train.shape}")
+        print(f"df_train[[0]] {df_train[[0]]}")
+        print(f"df_train[[1]] {df_train[[1]]}")
 
-        # Padding Sequences
-        max_length = max(len(x) for x in sequences)
-        padded_sequences = pad_sequences(sequences, maxlen=max_length, padding='post')
+        encoder = LabelEncoder()#handle_unknown='ignore', sparse_output=False)
+        df_train['encoded_features'] = encoder.fit_transform(df_train[[0]])
+        df_train = df_train.drop(0, axis=1)
+        print(f"df_train {df_train} {df_train.shape}")
 
         # Input/Output Split (for next word prediction)
-        X = prospects_categorized_words[:, :-1]
-        y = prospects_categorized_words[:, -1]
-
+#         X = np.asarray(prospects_categorized_words[:-1])
+#         y = np.asarray(prospects_categorized_words[1:])
+        X = df_train[:-1]
+        y = df_train[1:]
+        #X = df_train[:-1]
+        #y = df_train[1:]
         # Split the data into training and test sets
-        train_size = int(0.8 * len(X))
+        train_size = int(0.8 * X.shape[0])
         self.X_train, self.X_test = X[:train_size], X[train_size:]
         self.y_train, self.y_test = y[:train_size], y[train_size:]
 
         # Reshape the input data to 3D for LSTM
-        self.X_train1 = np.reshape(self.X_train, (self.X_train.shape[0], self.X_train.shape[1], 1))
+        #self.X_train1 = self.X_train
+        self.X_train1 = np.reshape(self.X_train, (-1, 1, self.X_train.shape[0]))#   self.X_train.shape[1]))
+        ##self.X_train1 = np.reshape(self.X_train, (len(self.X_train), -1))
         #self.X_test1 = np.reshape(self.X_test, (self.X_test.shape[0], 1, self.X_test.shape[1]))
         #self.y_train1 = np.reshape(self.y_train, (self.y_train.shape[0], 1, self.y_train.shape[1]))
         #self.y_test1 = np.reshape(self.y_test, (self.y_test.shape[0], 1, self.y_test.shape[1]))
 
-        #print(f"X_train.shape {self.X_train.shape}")
-#         self.model = Sequential([
-#             Input((self.X_train1.shape[1], 1)),
-#             LSTM(units=50, return_sequences=True),
-#             #Dropout(0.3),
-#             #LSTM(300, activation='relu', return_sequences=True, input_shape=(self.X_train1.shape[1], self.X_train1.shape[2])),
-#             #Dropout(0.3),
-#             LSTM(units=50),
-#             #Dropout(0.3),
-#             #Flatten(),
-#             #LSTM(100),
-#             #Dense(256),
-#             Dense(units=1),
-#         ])
+        print(f"X_train1.shape {self.X_train1.shape}")
+        print(f"self.X_train1.shape[0] {self.X_train1.shape[0]}")
+        self.model = Sequential([
+            Input((self.X_train1.shape[0], self.X_train1.shape[1])),
+            LSTM(units=50, activation='relu', return_sequences=True),
+            #Dropout(0.3),
+            #LSTM(300, activation='relu', return_sequences=True, input_shape=(self.X_train1.shape[1], self.X_train1.shape[2])),
+            #Dropout(0.3),
+            ##LSTM(units=50, activation='relu'),
+            #Dropout(0.3),
+            #Flatten(),
+            #LSTM(100),
+            #Dense(256),
+            Dense(units=1),
+        ])
 
+        self.model.compile(optimizer='adam', loss=['mean_squared_error'], metrics=['precision'])
+
+        log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+        retrain = True
+        if retrain:
+            print(f"self.X_train {self.X_train} {self.X_train.shape}")
+            print(f"self.Y_train {self.y_train} {self.y_train.shape}")
+            self.model.fit(self.X_train, self.y_train, epochs=10, batch_size=32, verbose=1, callbacks=[tensorboard_callback])
+            #, batch_size=32, validation_split=0.3, verbose=0, callbacks=[tensorboard_callback])
+
+            self.loss = self.model.evaluate(self.X_test, self.y_test)
+            print(f'Test loss: {self.loss}')
+
+        try:
+            joblib.dump(self.model, 'src/.model.dump')
+        except NotFittedError as exc:
+            print(f"Model is not fitted yet.")
 
 #        print(f"\n\n{prospects_categorized_words}\n\n")
 
