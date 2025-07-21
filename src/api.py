@@ -14,10 +14,10 @@ class ApiEndpoints:
             return {"API": "V1"}
 
         @app.get("/predict")
-        def predict(prices:str):
+        def predict(applicants:str):
             #pipeline = Pipeline()
 
-            mae, mse, rmse, mape = pipeline.predict(prices)
+            mae, mse, rmse, mape = pipeline.predict(applicants)
             return { "message" : f"mae: {mae}|mse: {mse}|rmse: {rmse}|mape: {mape}"}
             #29508039744.178253|5.796406865801174e+21|76134137322.23656|6090.248222127322
             #87940498790.81458|5.059217249030164e+22|224927038148.59973|17566.530693037814

@@ -1,4 +1,4 @@
-# fiap_tech_challenge_04
+# fiap_tech_challenge_05
 
 ## Pre-requisitos
 - O Docker deve estar instalado na maquina em que o projeto sera executado.
@@ -9,17 +9,17 @@ Este projeto tem como objetivo criar um LSTM para fazer a predição de valores 
 
 ## Operação
 A aplicação engloba 3 containers:
-- Tech04: aquele que tem a API para realizar as predicoes. Ela roda em Python3.12;
-- Tensorboard04: ferramenta de monitoração do modelode LSTM;
-- Portainer04: ferramenta de monitoração dos containers, tanto recursos de infra quanto dos logs e saúde destes.
+- Tech05: aquele que tem a API para realizar as predicoes. Ela roda em Python3.12;
+- Tensorboard05: ferramenta de monitoração do modelode LSTM;
+- Portainer05: ferramenta de monitoração dos containers, tanto recursos de infra quanto dos logs e saúde destes.
 
 Para executá-los, basta digitar a seguinte linha de comando:
 
 docker compose -f docker-compose.yml up -d
 
-Basta esperar que ele baixe as imagens e as coloque no ar. Para verificar se a aplicação subiu corretamente, basta olhar o log do container tech04:
+Basta esperar que ele baixe as imagens e as coloque no ar. Para verificar se a aplicação subiu corretamente, basta olhar o log do container tech05:
 
-docker logs tech04 -f
+docker logs tech05 -f
 
 Ela estará no ar quando aparecerem a seguintes mensagens:
 
