@@ -5,7 +5,7 @@
 - Ter um browser instalado na máquina ou ferramenta para acessar a API (curl, por exemplo)
 
 ## Objetivo
-Este projeto tem como objetivo criar um LSTM para fazer a predição de valores do fechamento da bolsa de valores da empresa The Walt Disney Company (DIS). Ele utiliza os valores do Yahoo Finance e cria toda a pipeline de desenvolvimento, desde a criação do modelo preditivo até o deploy em uma API que permite a previsão de preço de ações.
+Este projeto tem como objetivo criar um LSTM para fazer a predição da probabilidade de contratacao de certos grupos de pessoas, baseado no historico de contratacoes anterioes.
 
 ## Operação
 A aplicação engloba 3 containers:
@@ -32,12 +32,14 @@ A API já faz a cargs dos dados e o treinamento do modelo ao iniciar, caso não 
 Fica disponível um endpoint chamado **predict**, que recebe um arquivo de entrada com valores para serem usados na predição. Já existe na raiz do projeto um arquivo pronto chamado **predict_input**, para ser usado como teste. A chamada do endpoint fica desta forma, a partir da raiz do projeto:
 
 curl -v http://172.30.0.4:8080/predict?prices="./predict_input"
+curl -v http://localhost:8080/predict?prices="./predict_input"
 
 ## Monitoração
 A monitoração pode ser feita nestes 2 endpoints, acessando-os pelo browser:
 - Portainer: ferramenta de monitoração dos containers, tanto recursos de infra quanto dos logs e saúde destes.
 
 http://172.30.0.6:9000
+http://localhost:9000
 
 Usuario: admin
 Senha: adminportainer
@@ -45,16 +47,10 @@ Senha: adminportainer
 - Tensorboard: ferramenta de monitoração do modelode LSTM.
 
 http://172.30.0.5:6006/#timeseries&run=fit%2F20250605-154514%2Ftrain
+http://localhost:6006/#timeseries&run=fit%2F20250605-154514%2Ftrain
 
 
 ## Qualidade do Modelo
-Foram medidas a precision e a loss do modelo (mean_squared_error), que ficaram em torno de 80,2% e 1,21% respectivamente.
-
-Nas predicoes usando o arquivo predic_inout na raiz deste projeto, as medições foram estas e ficaram em torno destes valores:
-
-MAE: 109.59985727372306
-MSE: 12931.893355177934
-RMSE: 113.71848290923482
-MAPE: 1.060040553927951
-
-O MAPE ficou em torno de 2,5% , sendo assim considero que o modelo ficou com uma precisão e erros aceitáveis. Pode melhorar mais, trabalhando no treinamento e talvez na preparação dos dados.
+Nao foi possivel calcular a qualidade do modelo corretamente, a precisao do modelo ficou em 100%, demonstando que exste overfitting. Isto pode ter sido causad por alguns fatores:
+- Baixa quantidade de dados disponíveis para treinar o modelo;
+- Problemas ao calcular as metricas MAE, MSE, MRSE e MAPE. O modelo realiza a predição mas não faz o cálculo das métricas, talvez devido a problemas nos dados de entrada

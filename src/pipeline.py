@@ -195,15 +195,15 @@ class Pipeline:
         for df_cv_en, df_cv_pt in zip(df_applicants["cv_en"],
                                         df_applicants["cv_pt"]):
             try:
-                print(f"df_cv_en {df_cv_en}")
+#                 print(f"df_cv_en {df_cv_en}")
                 if type(df_cv_en) is not float:
                     tmp = df_cv_en.split('\n')
-                    print(f"tmp_cv_en {tmp}")
+#                     print(f"tmp_cv_en {tmp}")
                     for t in tmp:
-                        print(f"t.split(' ') {t.split(' ')}")
+#                         print(f"t.split(' ') {t.split(' ')}")
                         for w in t.split(' '):
                             words.append(w)
-                print(f"df_cv_pt {df_cv_pt}")
+#                 print(f"df_cv_pt {df_cv_pt}")
                 if type(df_cv_pt) is not float:
                     tmp = df_cv_pt.split('\n')
                     for t in tmp:
@@ -230,7 +230,6 @@ class Pipeline:
         y_pred = self.model.predict(df_predict)
         print(f"y_pred {y_pred} {y_pred.shape}")
 
-        y_pred1 = np.reshape(y_pred, (y_pred.shape[0], -1)).flatten()
 #         print(f"y_pred_inv {y_pred_inv} {y_pred_inv.shape}")
         y_pred_inv = self.encoder.inverse_transform(y_pred1)
         # print(f"self.y_pred_inv {y_pred_inv}")
