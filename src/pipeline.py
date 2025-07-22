@@ -127,8 +127,8 @@ class Pipeline:
 
         df_train = pd.DataFrame.from_dict(prospects_categorized_words)#, columns=['words', 'count'])
 
-        encoder = LabelEncoder()
-        df_train['encoded_features'] = encoder.fit_transform(df_train[[0]])
+        self.encoder = LabelEncoder()
+        df_train['encoded_features'] = self.encoder.fit_transform(df_train[[0]])
         df_train = df_train.drop(0, axis=1)
         print(f"df_train {df_train} {df_train.shape}")
 
@@ -159,8 +159,10 @@ class Pipeline:
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         #retrain = True
+        print(f"self.X_test {self.X_test}")
+        print(f"self.y_test {self.y_test}")
         if retrain:
-            self.model.fit(self.X_train, self.y_train, epochs=10, batch_size=32, verbose=1, callbacks=[tensorboard_callback])
+            self.model.fit(self.X_train, self.y_train, epochs=10, batch_size=32, verbose=0, callbacks=[tensorboard_callback])
 
             self.loss = self.model.evaluate(self.X_test, self.y_test)
             print(f'Test loss: {self.loss}')
@@ -184,6 +186,7 @@ class Pipeline:
         df_applicants = self.normalize_json(df_applicants, "informacoes_pessoais")
         df_applicants = self.normalize_json(df_applicants, "informacoes_profissionais")
         df_applicants = self.normalize_json(df_applicants, "formacao_e_idiomas")
+        print(f"df_applicants [{df_applicants}] [{df_applicants.columns}] [{df_applicants.shape}]")
 
         count = 0
         categorized_words = []
@@ -192,11 +195,15 @@ class Pipeline:
         for df_cv_en, df_cv_pt in zip(df_applicants["cv_en"],
                                         df_applicants["cv_pt"]):
             try:
+                print(f"df_cv_en {df_cv_en}")
                 if type(df_cv_en) is not float:
                     tmp = df_cv_en.split('\n')
+                    print(f"tmp_cv_en {tmp}")
                     for t in tmp:
+                        print(f"t.split(' ') {t.split(' ')}")
                         for w in t.split(' '):
                             words.append(w)
+                print(f"df_cv_pt {df_cv_pt}")
                 if type(df_cv_pt) is not float:
                     tmp = df_cv_pt.split('\n')
                     for t in tmp:
@@ -209,25 +216,33 @@ class Pipeline:
             else:
                 count = count + 1
 
+        #print(f"words {words}")
         word_count = cv.fit_transform(words)
         categorized_words = list(cv.vocabulary_.items())[:10000]
 
         df_predict = pd.DataFrame.from_dict(categorized_words)
 
-        encoder = LabelEncoder()
-        df_predict['encoded_features'] = encoder.fit_transform(df_train[[0]])
+        #encoder = LabelEncoder()
+        df_predict['encoded_features'] = self.encoder.fit_transform(df_predict[[0]])
         df_predict = df_predict.drop(0, axis=1)
-        print(f"df_train {df_predict} {df_predict.shape}")
+        print(f"df_predict {df_predict} {df_predict.shape}")
         #h_prices1 = np.reshape(h_prices, (h_prices.shape[0], 1, 1))
         y_pred = self.model.predict(df_predict)
-        
-        y_pred_inv = self.scaler.inverse_transform(y_pred)
+        print(f"y_pred {y_pred} {y_pred.shape}")
+
+        y_pred1 = np.reshape(y_pred, (y_pred.shape[0], -1)).flatten()
+#         print(f"y_pred_inv {y_pred_inv} {y_pred_inv.shape}")
+        y_pred_inv = self.encoder.inverse_transform(y_pred1)
         # print(f"self.y_pred_inv {y_pred_inv}")
         # print(f"self.y_pred_inv.shape {y_pred_inv.shape}")
-        y_test_inv = self.scaler.inverse_transform(self.y_test)
+        y_test_inv = self.encoder.inverse_transform(self.y_test)
         # print(f"self.y_test_inv {y_test_inv}")
         # print(f"self.y_test_inv.shape {y_test_inv.shape}")
 
+#         df_predict1 = np.reshape(df_predict, (df_predict.shape[1], -1))
+#         print(f"df_predict1 {df_predict1} {df_predict.shape}")
+#         y_pred_inv = np.reshape(y_pred, (y_pred.shape[0], -1))
+#         print(f"y_pred_inv {y_pred_inv} {y_pred_inv.shape}")
         mae = mean_absolute_error(y_test_inv,y_pred_inv)
         mse = mean_squared_error(y_test_inv,y_pred_inv)
         rmse = np.sqrt(mse)
